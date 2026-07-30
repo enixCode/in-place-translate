@@ -1,0 +1,142 @@
+.iptr-btn,
+.iptr-minibar,
+.iptr-toast,
+.iptr-overlay {
+  all: initial;
+  position: fixed;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-sizing: border-box;
+  background: rgba(30, 30, 32, .92);
+  color: #f5f5f7;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(255, 255, 255, .08);
+  transition: transform .12s ease, opacity .12s ease;
+}
+
+/* Pas de fond propre : le bouton partage la surface neutre des autres
+   éléments (sombre en thème sombre, blanche en thème clair). */
+.iptr-btn {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+.iptr-btn:hover {
+  background: rgba(45, 45, 48, .95);
+  transform: translateY(-1px);
+}
+
+.iptr-btn:active {
+  transform: translateY(0);
+}
+
+.iptr-minibar {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+}
+
+.iptr-minibar button {
+  all: unset;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+
+.iptr-minibar button:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+.iptr-minibar button:active {
+  background: rgba(255, 255, 255, .18);
+}
+
+.iptr-toast {
+  bottom: 20px;
+  right: 20px;
+  padding: 11px 15px;
+  border-radius: 12px;
+  max-width: 320px;
+}
+
+.iptr-toast a {
+  color: #64b5ff;
+  margin-left: 4px;
+  text-decoration: none;
+}
+
+.iptr-toast a:hover {
+  text-decoration: underline;
+}
+
+.iptr-overlay {
+  padding: 9px 13px;
+  border-radius: 12px;
+  max-width: 320px;
+}
+
+@media (prefers-color-scheme: light) {
+  .iptr-btn,
+  .iptr-minibar,
+  .iptr-toast,
+  .iptr-overlay {
+    background: rgba(255, 255, 255, .92);
+    color: #1d1d1f;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .06);
+  }
+
+  .iptr-btn:hover {
+    background: rgba(245, 245, 247, .98);
+  }
+
+  .iptr-minibar button:hover {
+    background: rgba(0, 0, 0, .06);
+  }
+
+  .iptr-minibar button:active {
+    background: rgba(0, 0, 0, .1);
+  }
+
+  .iptr-toast a {
+    color: #0071e3;
+  }
+}
+
+span[data-iptr-id] {
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color .12s ease;
+}
+
+span[data-iptr-id]:hover {
+  background: rgba(10, 132, 255, .12);
+}
+
+span[data-iptr-id].iptr-loading {
+  opacity: .55;
+}
+
+.iptr-spinner {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-left: 4px;
+  border: 1.5px solid rgba(128, 128, 128, .35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: iptr-spin .6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes iptr-spin {
+  to { transform: rotate(360deg); }
+}
