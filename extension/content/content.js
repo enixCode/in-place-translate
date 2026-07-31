@@ -1,6 +1,12 @@
 'use strict';
 
 (function () {
+  // Le script peut être à la fois enregistré (accès accordé) et injecté à la
+  // demande par le menu contextuel. Sans cette garde, la seconde exécution
+  // doublerait les écouteurs et les bulles.
+  if (window.__iptrLoaded) return;
+  window.__iptrLoaded = true;
+
   var zones = new Map();
   var btnEl = null;
   var miniBarEl = null;

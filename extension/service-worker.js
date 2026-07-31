@@ -137,6 +137,68 @@
   root.IptrServiceWorkerApi = api;
 
   var CONTEXT_MENU_ID = 'iptr-translate-selection';
+  var ALL_URLS = '<all_urls>';
+  var DYNAMIC_SCRIPT_ID = 'iptr-content';
+  var CONTENT_JS = ['content/dom.js', 'content/content.js'];
+  var CONTENT_CSS = ['content/styles.css'];
+
+  // Le content script n'est plus déclaré dans le manifeste : il n'est enregistré
+  // que si l'utilisateur a accordé l'accès aux sites, et retiré dès qu'il le
+  // révoque. Sans cet accès, seul le menu contextuel fonctionne, via activeTab.
+  function syncContentScripts() {
+    return chrome.permissions.contains({ origins: [ALL_URLS] }).then(function (granted) {
+      return chrome.scripting.getRegisteredContentScripts({ ids: [DYNAMIC_SCRIPT_ID] })
+        .then(function (existing) {
+          if (granted && existing.length === 0) {
+            return chrome.scripting.registerContentScripts([{
+              id: DYNAMIC_SCRIPT_ID,
+              matches: [ALL_URLS],
+              allFrames: true,
+              js: CONTENT_JS,
+              css: CONTENT_CSS,
+              runAt: 'document_idle'
+            }]);
+          }
+          if (!granted && existing.length > 0) {
+            return chrome.scripting.unregisterContentScripts({ ids: [DYNAMIC_SCRIPT_ID] });
+          }
+          return undefined;
+        });
+    }).catch(function () {
+      // Rien à faire : l'injection à la demande du menu contextuel prend le relais.
+    });
+  }
+
+  // activeTab n'ouvre l'accès qu'après un geste explicite de l'utilisateur. Le
+  // clic sur l'entrée de menu en est un, donc l'injection passe même sans
+  // aucune permission d'hôte accordée.
+  function injectContentScript(tabId, frameId) {
+    var target = { tabId: tabId };
+    if (typeof frameId === 'number') target.frameIds = [frameId];
+    else target.allFrames = true;
+    return chrome.scripting.insertCSS({ target: target, files: CONTENT_CSS })
+      .then(function () {
+        return chrome.scripting.executeScript({ target: target, files: CONTENT_JS });
+      });
+  }
+
+  // Un script enregistré ne s'exécute qu'au chargement suivant. Sans cette
+  // passe, l'utilisateur accorde l'accès et ne voit rien changer dans les
+  // onglets déjà ouverts.
+  function injectIntoOpenTabs() {
+    return chrome.tabs.query({}).then(function (tabs) {
+      return Promise.all(tabs.map(function (tab) {
+        if (!tab.id || !tab.url || !/^https?:/.test(tab.url)) return undefined;
+        return injectContentScript(tab.id).catch(function () { return undefined; });
+      }));
+    }).catch(function () { return undefined; });
+  }
+
+  chrome.runtime.onStartup.addListener(syncContentScripts);
+  chrome.permissions.onAdded.addListener(function () {
+    syncContentScripts().then(injectIntoOpenTabs);
+  });
+  chrome.permissions.onRemoved.addListener(syncContentScripts);
 
   chrome.runtime.onInstalled.addListener(function () {
     // removeAll d'abord : onInstalled se déclenche aussi sur mise à jour, et
@@ -157,6 +219,8 @@
       });
       if (Object.keys(toSet).length > 0) chrome.storage.local.set(toSet);
     });
+
+    syncContentScripts();
   });
 
   function handleTranslate(message) {
@@ -190,7 +254,20 @@
   // message part au frame principal et rate une sélection faite dans une iframe.
   chrome.contextMenus.onClicked.addListener(function (info, tab) {
     if (info.menuItemId !== CONTEXT_MENU_ID || !tab) return;
-    chrome.tabs.sendMessage(tab.id, { type: 'translateSelection' }, { frameId: info.frameId });
+    var options = typeof info.frameId === 'number' ? { frameId: info.frameId } : {};
+    var send = function () {
+      return chrome.tabs.sendMessage(tab.id, { type: 'translateSelection' }, options);
+    };
+    // Premier envoi à l'aveugle : il échoue si aucun script n'est présent sur la
+    // page, auquel cas on l'injecte et on renvoie.
+    send()
+      .catch(function () {
+        return injectContentScript(tab.id, info.frameId).then(send);
+      })
+      .catch(function () {
+        // Page interdite d'injection (chrome://, Web Store) : rien à signaler,
+        // aucune UI n'est disponible pour y afficher une erreur.
+      });
   });
 
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {

@@ -27,5 +27,8 @@
   "statusOk": { "message": "OK" },
   "statusError": { "message": "Error" },
   "labelEnabled": { "message": "Enabled" },
+  "statusAccessGranted": { "message": "Active on all sites" },
+  "statusAccessNeeded": { "message": "Right-click menu only for now" },
+  "btnAllowAllSites": { "message": "Allow on all sites" },
   "linkOptions": { "message": "Options" }
 }

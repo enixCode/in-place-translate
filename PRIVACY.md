@@ -41,9 +41,13 @@ in memory only, so reloading the page restores the original.
 - `storage`: keep the four settings above between browser sessions.
 - `contextMenus`: add the single "Translate" entry, shown only on a text selection.
 - `activeTab`: reach the tab you acted on, and only after you click that entry.
+- `scripting`: load the in-page script, on demand or on the sites you allowed.
 - host access to `https://api.anthropic.com/*`: send the translation request.
-- content script on all sites: show the floating button on whatever page you are reading.
-  It stays passive until you select text.
+
+Access to the pages you read is **not** requested at install time. The extension asks for
+it only when you want the floating button to appear on its own, from the popup, and you
+may refuse: the right-click menu keeps working without it. Revoking it later from Chrome
+disables the in-page button and nothing else.
 
 ## Contact
 

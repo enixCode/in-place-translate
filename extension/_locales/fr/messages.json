@@ -27,5 +27,8 @@
   "statusOk": { "message": "OK" },
   "statusError": { "message": "Erreur" },
   "labelEnabled": { "message": "Activé" },
+  "statusAccessGranted": { "message": "Actif sur tous les sites" },
+  "statusAccessNeeded": { "message": "Menu contextuel seulement pour l'instant" },
+  "btnAllowAllSites": { "message": "Autoriser sur tous les sites" },
   "linkOptions": { "message": "Options" }
 }

@@ -24,6 +24,13 @@ No build step, the folder ships as is.
 
 The key lives in `chrome.storage.local` on this machine only. It is never synced across browsers and never sent anywhere other than `api.anthropic.com`.
 
+## Page access
+
+The extension requests no access to the sites you visit at install time. Open the popup and
+click **Allow on all sites** to let the floating button appear by itself as you read. If you
+would rather not, skip it: **Translate** in the right-click menu works without any site
+access. You can revoke the permission from Chrome at any time.
+
 ## Use
 
 Select text on any page, then click the floating button or use **Translate** in the right-click menu. The selection is replaced by its translation, and a mini-bar lets you show the original, restore it, or translate again. The popup toggles the extension off without uninstalling it.

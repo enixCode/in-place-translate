@@ -70,6 +70,25 @@
       border-top: 1px solid var(--border);
       margin-top: 4px;
     }
+    #siteAccessStatus {
+      display: block;
+      color: var(--muted);
+      padding: 6px 0;
+      border-top: 1px solid var(--border);
+    }
+    #grantAccess {
+      width: 100%;
+      margin-top: 2px;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #grantAccess[hidden] { display: none; }
     a {
       display: block;
       margin-top: 8px;
@@ -86,6 +105,8 @@
     <input type="checkbox" id="enabled">
   </label>
   <div id="targetLangDisplay"></div>
+  <span id="siteAccessStatus"></span>
+  <button type="button" id="grantAccess" hidden></button>
   <a href="#" id="openOptions"></a>
   <script src="popup.js"></script>
 </body>
