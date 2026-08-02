@@ -1,41 +1,61 @@
 # Mises à jour automatisées vers le Chrome Web Store
 
-## Prérequis
+Un tag `v*` poussé sur `main` déclenche `.github/workflows/release.yml`, qui teste, construit le paquet et le soumet au store. Aucune dépendance tierce n'intervient : le workflow appelle l'[API Chrome Web Store v2](https://developer.chrome.com/docs/webstore/api) directement avec `curl` et `jq`.
 
-- La première soumission de l'extension a été faite manuellement sur le [Developer Dashboard](https://chromewebstore.google.com/devconsole) et approuvée (impossible à automatiser).
-- L'**ID de l'extension** est connu (visible dans l'URL du dashboard une fois l'item créé, ~32 caractères).
+## Publier une nouvelle version
 
-## 1. Activer l'API Chrome Web Store
+```sh
+npm version patch   # ou minor, ou major
+git push --follow-tags
+```
 
-Sur [console.cloud.google.com](https://console.cloud.google.com), créer un projet (ou réutiliser un projet existant), puis activer l'API **"Chrome Web Store API"** pour ce projet.
+`npm version` incrémente `package.json`, déclenche le hook `version` qui recopie le numéro dans `extension/manifest.json` via `scripts/sync-manifest-version.mjs`, commite les deux fichiers et pose le tag. Les trois numéros ne peuvent donc pas diverger. Le workflow revérifie de toute façon que le tag correspond au manifeste avant de construire quoi que ce soit, et échoue avant tout envoi si ce n'est pas le cas.
 
-## 2. Créer les identifiants OAuth 2.0
+Le store refuse un paquet dont la version n'est pas strictement supérieure à celle déjà publiée.
 
-Dans ce même projet Google Cloud : créer des identifiants OAuth 2.0 de type **"Desktop app"**. Récupérer le **Client ID** et le **Client Secret** générés.
+## Mise en place initiale
 
-## 3. Générer le refresh token
+Faite une seule fois, elle est déjà en place. Ce qui suit sert à la refaire si les identifiants sont révoqués.
 
-Utiliser l'outil compagnon [`chrome-webstore-upload-keys`](https://github.com/fregante/chrome-webstore-upload-keys) (même auteur que l'outil de publication) : il fait l'autorisation OAuth en une commande et retourne directement le **Refresh Token**. Cette étape ne se fait qu'une seule fois.
+### 1. Projet Google Cloud
 
-## 4. Ajouter les secrets sur GitHub
+Créer un projet, puis activer l'API sur ce projet : https://console.cloud.google.com/apis/library/chromewebstore.googleapis.com
 
-Dans le repository : **Settings → Secrets and variables → Actions**, ajouter 4 secrets chiffrés :
+### 2. Client OAuth
 
-- `CLIENT_ID`
-- `CLIENT_SECRET`
-- `REFRESH_TOKEN`
-- `EXTENSION_ID`
+Configurer l'écran de consentement, puis créer un identifiant OAuth de type **Desktop app**, qui autorise la redirection vers `127.0.0.1` utilisée par le script de la section suivante.
 
-## 5. Workflow GitHub Actions
+**Publier l'application** (statut *In production*, page Audience). Tant qu'elle reste en *Testing*, Google révoque les refresh tokens au bout de 7 jours et le pipeline casse avec `invalid_grant: Token has been expired or revoked`.
 
-Un workflow déclenché sur un tag ou une release :
+### 3. Refresh token
 
-- installe les dépendances (`npm ci`) et lance les tests (`npm test`)
-- construit le paquet avec `git archive --format=zip -o dist/in-place-translate-<version>.zip HEAD:extension`, et surtout pas un `zip -r` du dossier : `git archive` n'emballe que les fichiers suivis par git, et place `manifest.json` à la racine de l'archive, ce que le store exige (sortie dans `dist/`, exclu du dépôt via `.gitignore`)
-- lance `npx chrome-webstore-upload-cli upload` puis `publish`, avec les 4 secrets ci-dessus en variables d'environnement
+Renseigner `CLIENT_ID` et `CLIENT_SECRET` dans un fichier `.env` à la racine (ignoré par git), puis :
 
-Le store refuse un paquet dont la version n'est pas strictement supérieure à celle déjà publiée. Le tag qui déclenche le workflow doit donc correspondre à la version du manifeste, incrémentée avant de taguer.
+```sh
+node scripts/get-refresh-token.mjs
+```
+
+Le script ouvre le flux OAuth, récupère le jeton sur un serveur local éphémère et l'écrit dans le `.env` sans jamais l'afficher. Le consentement OAuth exige une action humaine dans un navigateur : c'est la seule étape qui ne peut pas être automatisée, et le jeton obtenu est précisément ce qui rend tout le reste automatique.
+
+### 4. Secrets GitHub
+
+Cinq secrets sous **Settings → Secrets and variables → Actions** :
+
+| Secret | Où le trouver |
+|---|---|
+| `EXTENSION_ID` | URL de l'élément dans le dashboard développeur |
+| `PUBLISHER_ID` | page Settings du dashboard développeur, requis par l'API v2 |
+| `CLIENT_ID` | identifiants OAuth |
+| `CLIENT_SECRET` | identifiants OAuth |
+| `REFRESH_TOKEN` | étape 3 |
+
+## Ce que fait le workflow
+
+1. `npm ci` puis `npm test`.
+2. Vérifie que le tag correspond à la version du manifeste.
+3. Construit le paquet avec `git archive --format=zip -o dist/… HEAD:extension`, et surtout pas un `zip -r` du dossier : `git archive` n'emballe que les fichiers suivis par git et place `manifest.json` à la racine de l'archive, ce que le store exige.
+4. Échange le refresh token contre un jeton d'accès, envoie le paquet sur `:upload`, sonde `:fetchStatus` si le traitement est différé, puis appelle `:publish`.
 
 ## Limite importante
 
-Même automatisé, chaque envoi repasse par la revue de Google avant de devenir visible publiquement. Le CI/CD automatise uniquement l'étape « soumettre », pas l'approbation.
+Chaque envoi repasse par la revue de Google avant de devenir visible. Le pipeline automatise la soumission, pas l'approbation : l'état attendu en fin de course est `PENDING_REVIEW`.

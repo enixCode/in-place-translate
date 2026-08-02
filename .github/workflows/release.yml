@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  chrome:
+    name: Submit to the Chrome Web Store
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Resolve the version from the tag
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "ZIP=dist/in-place-translate-${GITHUB_REF_NAME#v}.zip" >> "$GITHUB_ENV"
+
+      # Le store refuse un paquet dont la version n'est pas strictement
+      # supérieure à celle publiée. Un tag qui ne correspond pas au manifeste
+      # publierait donc autre chose que ce qu'il annonce, ou rien du tout.
+      - name: Check the tag matches the manifest
+        run: |
+          manifest=$(node -p "require('./extension/manifest.json').version")
+          if [ "$manifest" != "$VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME announces $VERSION, manifest says $manifest"
+            exit 1
+          fi
+
+      # git archive n'emballe que les fichiers suivis par git et place
+      # manifest.json à la racine de l'archive, ce que le store exige.
+      - name: Build the package
+        run: |
+          mkdir -p dist
+          git archive --format=zip -o "$ZIP" HEAD:extension
+          unzip -l "$ZIP"
+
+      # Appels directs à l'API Chrome Web Store v2, sans dépendance tierce :
+      # rien d'autre que curl et jq, déjà présents sur le runner, ne voit les
+      # jetons qui autorisent une publication au nom du compte.
+      - name: Upload and publish
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+          EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
+        run: |
+          set -euo pipefail
+          api=https://chromewebstore.googleapis.com
+          item="publishers/$PUBLISHER_ID/items/$EXTENSION_ID"
+
+          # Le refresh token s'échange contre un jeton d'accès valable une heure.
+          # La réponse d'erreur est affichée telle quelle : elle ne contient que
+          # error et error_description, et c'est elle qui nomme le problème quand
+          # Google a révoqué le jeton.
+          if ! auth=$(curl -sS --fail-with-body https://oauth2.googleapis.com/token \
+            -d grant_type=refresh_token \
+            -d client_id="$CLIENT_ID" \
+            -d client_secret="$CLIENT_SECRET" \
+            -d refresh_token="$REFRESH_TOKEN"); then
+            echo "::error::OAuth token exchange failed: $auth"
+            exit 1
+          fi
+          token=$(echo "$auth" | jq -re .access_token)
+          echo "::add-mask::$token"
+
+          echo "Uploading $ZIP"
+          upload=$(curl -sS --fail-with-body -X POST -T "$ZIP" \
+            -H "Authorization: Bearer $token" \
+            "$api/upload/v2/$item:upload")
+          echo "$upload" | jq .
+          state=$(echo "$upload" | jq -r '.uploadState // "UPLOAD_STATE_UNSPECIFIED"')
+
+          # Un paquet volumineux est traité en différé : Google demande alors de
+          # sonder fetchStatus jusqu'à ce que l'état se fige.
+          waited=0
+          while [ "$state" = "IN_PROGRESS" ] && [ "$waited" -lt 300 ]; do
+            sleep 15
+            waited=$((waited + 15))
+            state=$(curl -sS --fail-with-body -H "Authorization: Bearer $token" \
+              "$api/v2/$item:fetchStatus" | jq -r '.lastAsyncUploadState // "IN_PROGRESS"')
+            echo "upload state: $state (${waited}s)"
+          done
+
+          if [ "$state" != "SUCCEEDED" ]; then
+            echo "::error::upload ended in state $state"
+            exit 1
+          fi
+
+          echo "Publishing"
+          published=$(curl -sS --fail-with-body -X POST \
+            -H "Authorization: Bearer $token" \
+            -H "Content-Length: 0" \
+            "$api/v2/$item:publish")
+          echo "$published" | jq .
+
+          case "$(echo "$published" | jq -r '.state // ""')" in
+            PENDING_REVIEW) echo "Submitted, waiting for Google review." ;;
+            PUBLISHED) echo "Published." ;;
+            *) echo "::error::unexpected publish state"; exit 1 ;;
+          esac
