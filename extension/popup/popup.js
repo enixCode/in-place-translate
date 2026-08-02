@@ -5,6 +5,8 @@
 
   document.getElementById('labelEnabled').textContent = chrome.i18n.getMessage('labelEnabled');
   document.getElementById('openOptions').textContent = chrome.i18n.getMessage('linkOptions');
+  // Lue dans le manifeste : rien à mettre à jour à la main ici.
+  document.getElementById('version').textContent = 'v' + chrome.runtime.getManifest().version;
 
   var enabledCheckbox = document.getElementById('enabled');
   var targetLangDisplay = document.getElementById('targetLangDisplay');
