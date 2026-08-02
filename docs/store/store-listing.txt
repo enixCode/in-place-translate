@@ -1,0 +1,150 @@
+FICHE CHROME WEB STORE - In-Place Translator 0.1.0
+Tous les textes prets a copier. Langue d'edition : anglais.
+
+
+==============================================================================
+1. PACKAGE  (a faire EN PREMIER, le brouillon contient encore l'ancien zip)
+==============================================================================
+
+Televerser : dist\in-place-translate-0.1.0.zip
+
+Apres l'envoi, l'avertissement "Autorisations etendues relatives aux hotes"
+doit avoir disparu. Si ce n'est pas le cas, ne pas soumettre et me le dire.
+
+
+==============================================================================
+2. FICHE PLAY STORE
+==============================================================================
+
+Categorie : Tools   (groupe Productivite, PAS Functionality & UI)
+
+Captures internationales, dans cet ordre :
+  dist\shot-1-floating-button.jpg
+  dist\shot-2-options.jpg
+
+URL page d'accueil : https://github.com/enixCode/in-place-translate
+URL assistance     : https://github.com/enixCode/in-place-translate/issues
+Contenu reserve aux adultes : non
+
+--- DESCRIPTION ---------------------------------------------------------------
+
+Translate any selection in place, right where you are reading.
+
+Select text on any page, then click the floating button or pick Translate from the
+right-click menu. The selection is replaced by its translation on the spot, keeping bold,
+italics, links and images where they belong. A mini-bar lets you peek at the original,
+restore it, or translate again.
+
+Select whole sentences or paragraphs rather than single words. The model translates from
+context, so the surrounding words are what let it pick the right meaning, and a word on
+its own loses exactly that.
+
+On first use, allow the extension on all sites from its popup so the floating button can
+appear as you read. If you prefer not to, the right-click menu works without any site
+access.
+
+Requires your own Anthropic API key, pasted in the options. No subscription, no account.
+
+Target languages: French, English, Spanish, German, Italian, Portuguese, Dutch, Polish,
+Japanese, Korean, Chinese, Arabic, Russian.
+
+- Your API key is kept in local extension storage (chrome.storage.local), on this device
+  only. It is never synced to your Google account.
+- api.anthropic.com is the only server this extension contacts. No analytics, no
+  telemetry, no third-party service.
+- Nothing leaves your browser until you ask for a translation, and only the text you
+  selected is sent.
+
+Free and open source under the MIT license:
+https://github.com/enixCode/in-place-translate
+
+Not affiliated with Anthropic.
+
+-------------------------------------------------------------------------------
+
+
+==============================================================================
+3. PRATIQUES EN MATIERE DE CONFIDENTIALITE
+==============================================================================
+
+URL politique de confidentialite :
+https://github.com/enixCode/in-place-translate/blob/main/PRIVACY.md
+
+Donnees collectees : cocher UNIQUEMENT
+  [x] Contenu du site Web
+  [x] Informations d'authentification
+Laisser decochees : identification personnelle, sante, financier, communications
+personnelles, localisation, historique web, activite de l'utilisateur.
+
+Les trois certifications : les cocher, elles sont exactes.
+
+Code distant : repondre NON.
+
+--- OBJECTIF UNIQUE -----------------------------------------------------------
+
+The extension has a single purpose: translating a text selection the user makes on a web
+page, and showing that translation in place of the selected text on the same page. Every
+permission and every UI element (floating button, context menu entry, mini-bar, options
+page, popup toggle) exists to serve that one function.
+
+--- STORAGE -------------------------------------------------------------------
+
+Stores four values with chrome.storage.local: the user's own Anthropic API key, the
+selected model, the target language, and the enabled toggle. They must persist across
+browser sessions, otherwise the user would re-enter their key on every use. Nothing else
+is stored, and none of it is transmitted anywhere, except the API key which authenticates
+the user's own requests to api.anthropic.com.
+
+--- CONTEXTMENUS --------------------------------------------------------------
+
+Adds one entry, "Translate", to the right-click menu, registered with
+contexts: ["selection"] so it only appears when text is selected. It is the alternative
+entry point to the floating button. No other menu item is created.
+
+--- ACTIVETAB -----------------------------------------------------------------
+
+When the user clicks the "Translate" context menu entry, the service worker sends a
+message to the content script of the tab the user acted on (chrome.tabs.sendMessage) so it
+can translate the current selection. activeTab limits that access to the tab where the
+user just clicked, and only after that click. It is used for nothing else: no tab is read,
+injected into, or modified without that user gesture.
+
+--- SCRIPTING -----------------------------------------------------------------
+
+The extension ships no static content script. The scripting permission is what loads the
+in-page code that shows the floating button and swaps the translated text in. Two paths,
+both bounded:
+
+- registerContentScripts, once the user has granted access to the sites from the popup, and
+  unregisterContentScripts as soon as that access is revoked.
+- executeScript and insertCSS on demand, after the user clicks the "Translate" entry in the
+  context menu, which grants activeTab for that tab alone.
+
+Only files shipped inside the package are ever injected: content/dom.js, content/content.js
+and content/styles.css. No remote code, no generated code, no eval.
+
+--- AUTORISATION D'HOTE -------------------------------------------------------
+
+https://api.anthropic.com/* is the only host permission requested at install time. It is
+the endpoint the extension posts the selected text to (POST /v1/messages). No other remote
+server is ever contacted.
+
+Access to the pages the user reads is declared under optional_host_permissions and is never
+requested at install time. The extension asks for it from its popup, only when the user
+wants the floating button to appear on selection, and it keeps working without it through
+the right-click menu, which relies on activeTab alone.
+
+--- CODE DISTANT --------------------------------------------------------------
+
+No remote code is used. Only the JavaScript bundled in the package is executed. Requests
+to api.anthropic.com exchange JSON data; the translated text from the response is inserted
+into the page as text and DOM nodes, never evaluated. The extension contains no eval, no
+new Function, no remotely hosted script and no externally loaded module.
+
+
+==============================================================================
+4. PARAMETRES DU COMPTE
+==============================================================================
+
+Email de contact editeur : enixcode@pm.me
+Il faut cliquer le lien de validation recu par mail, sinon la publication reste bloquee.
