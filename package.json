@@ -1,7 +1,7 @@
 {
   "name": "in-place-translate",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Dev tooling (tests) for the In-Place Translator extension. Not part of the shipped extension.",
   "author": "enixCode",
   "license": "MIT",
