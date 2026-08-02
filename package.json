@@ -10,7 +10,8 @@
     "url": "git+https://github.com/enixCode/in-place-translate.git"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "version": "node scripts/sync-manifest-version.mjs && git add extension/manifest.json"
   },
   "devDependencies": {
     "jsdom": "^25.0.0"
