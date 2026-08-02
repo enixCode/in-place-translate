@@ -8,7 +8,9 @@
 
 <p align="center">Traduisez le texte sélectionné directement sur la page, avec votre propre clé API Anthropic.</p>
 
-## Installation
+<p align="center"><a href="https://chromewebstore.google.com/detail/kekghjcpdoelkaojmajjbhckegaeoapc"><b>Installer depuis le Chrome Web Store</b></a></p>
+
+## Installation depuis les sources
 
 1. Clonez ou téléchargez ce dépôt.
 2. Ouvrez `chrome://extensions` et activez le **mode développeur**.

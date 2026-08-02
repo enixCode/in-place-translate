@@ -8,7 +8,9 @@
 
 <p align="center">Translate selected text in place on any page, with your own Anthropic API key.</p>
 
-## Install
+<p align="center"><a href="https://chromewebstore.google.com/detail/kekghjcpdoelkaojmajjbhckegaeoapc"><b>Install from the Chrome Web Store</b></a></p>
+
+## Install from source
 
 1. Clone or download this repository.
 2. Open `chrome://extensions` and turn on **Developer mode**.
