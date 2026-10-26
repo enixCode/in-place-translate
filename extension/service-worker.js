@@ -137,6 +137,7 @@
   root.IptrServiceWorkerApi = api;
 
   var CONTEXT_MENU_ID = 'iptr-translate-selection';
+  var PAGE_MENU_ID = 'iptr-translate-page';
   var ALL_URLS = '<all_urls>';
   var DYNAMIC_SCRIPT_ID = 'iptr-content';
   var CONTENT_JS = ['content/dom.js', 'content/content.js'];
@@ -209,6 +210,11 @@
         title: chrome.i18n.getMessage('btnTranslate'),
         contexts: ['selection']
       });
+      chrome.contextMenus.create({
+        id: PAGE_MENU_ID,
+        title: chrome.i18n.getMessage('btnTranslatePage'),
+        contexts: ['page']
+      });
     });
 
     chrome.storage.local.get(['apiKey', 'model', 'targetLang', 'enabled']).then(function (existing) {
@@ -252,22 +258,27 @@
 
   // Ciblage par frameId : le content script tourne en all_frames, sans lui le
   // message part au frame principal et rate une sélection faite dans une iframe.
-  chrome.contextMenus.onClicked.addListener(function (info, tab) {
-    if (info.menuItemId !== CONTEXT_MENU_ID || !tab) return;
-    var options = typeof info.frameId === 'number' ? { frameId: info.frameId } : {};
+  function sendToFrame(tabId, frameId, message) {
+    var options = typeof frameId === 'number' ? { frameId: frameId } : {};
     var send = function () {
-      return chrome.tabs.sendMessage(tab.id, { type: 'translateSelection' }, options);
+      return chrome.tabs.sendMessage(tabId, message, options);
     };
     // Premier envoi à l'aveugle : il échoue si aucun script n'est présent sur la
     // page, auquel cas on l'injecte et on renvoie.
-    send()
+    return send()
       .catch(function () {
-        return injectContentScript(tab.id, info.frameId).then(send);
+        return injectContentScript(tabId, frameId).then(send);
       })
       .catch(function () {
         // Page interdite d'injection (chrome://, Web Store) : rien à signaler,
         // aucune UI n'est disponible pour y afficher une erreur.
       });
+  }
+
+  chrome.contextMenus.onClicked.addListener(function (info, tab) {
+    if (!tab) return;
+    if (info.menuItemId === CONTEXT_MENU_ID) sendToFrame(tab.id, info.frameId, { type: 'translateSelection' });
+    if (info.menuItemId === PAGE_MENU_ID) sendToFrame(tab.id, info.frameId, { type: 'translatePage' });
   });
 
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
@@ -278,6 +289,12 @@
     if (message.type === 'test') {
       handleTest(message).then(sendResponse);
       return true;
+    }
+    // Depuis le popup : son ouverture accorde activeTab, l'injection passe donc
+    // même sans accès aux sites. Frame principal seulement.
+    if (message.type === 'translatePage') {
+      sendToFrame(message.tabId, 0, { type: 'translatePage' });
+      return false;
     }
     if (message.type === 'openOptions') {
       chrome.runtime.openOptionsPage();

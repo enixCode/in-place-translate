@@ -35,7 +35,7 @@ access. You can revoke the permission from Chrome at any time.
 
 ## Use
 
-Select text on any page, then click the floating button or use **Translate** in the right-click menu. The selection is replaced by its translation, and a mini-bar lets you show the original, restore it, or translate again. The popup toggles the extension off without uninstalling it.
+Select text on any page, then click the floating button or use **Translate** in the right-click menu. The selection is replaced by its translation, and a mini-bar lets you show the original, restore it, or translate again. To translate a whole article, click **Translate page** in the popup or the right-click menu; reload the page to get the original back. The popup also toggles the extension off without uninstalling it.
 
 ## Develop
 

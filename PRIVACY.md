@@ -1,10 +1,11 @@
 # Privacy Policy
 
-In-Place Translator, last updated 2026-07-30.
+In-Place Translator, last updated 2026-10-26.
 
 ## What is sent, and where
 
-When you ask for a translation, and only then, the text you selected is sent to the
+When you ask for a translation, and only then, the text you selected, or the visible text
+of the page when you choose "Translate page", is sent to the
 Anthropic Messages API at `https://api.anthropic.com/v1/messages`, along with your own API
 key for authentication and the target language you chose.
 
@@ -32,15 +33,17 @@ browser. Uninstalling the extension removes all four.
 The developer receives nothing: no browsing history, no page content, no personal
 information, no usage statistics, no crash reports.
 
-Selected text is never stored, neither locally nor remotely. It stays in memory for the
+Translated text is never stored, neither locally nor remotely. It stays in memory for the
 duration of a translation and is then discarded. Translated text is inserted into the page
 in memory only, so reloading the page restores the original.
 
 ## Why each permission is needed
 
 - `storage`: keep the four settings above between browser sessions.
-- `contextMenus`: add the single "Translate" entry, shown only on a text selection.
-- `activeTab`: reach the tab you acted on, and only after you click that entry.
+- `contextMenus`: add the "Translate" entry, shown only on a text selection, and the
+  "Translate page" entry.
+- `activeTab`: reach the tab you acted on, and only after you click one of those entries or
+  the popup's "Translate page" button.
 - `scripting`: load the in-page script, on demand or on the sites you allowed.
 - host access to `https://api.anthropic.com/*`: send the translation request.
 

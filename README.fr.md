@@ -36,7 +36,7 @@ permission est révocable à tout moment depuis Chrome.
 
 ## Utilisation
 
-Sélectionnez du texte sur n'importe quelle page, puis cliquez sur le bouton flottant ou utilisez **Traduire** dans le menu contextuel. La sélection est remplacée par sa traduction, et une mini-barre permet d'afficher l'original, de le restaurer ou de retraduire. Le popup désactive l'extension sans la désinstaller.
+Sélectionnez du texte sur n'importe quelle page, puis cliquez sur le bouton flottant ou utilisez **Traduire** dans le menu contextuel. La sélection est remplacée par sa traduction, et une mini-barre permet d'afficher l'original, de le restaurer ou de retraduire. Pour traduire tout un article, cliquez sur **Traduire la page** dans le popup ou le menu contextuel ; rechargez la page pour retrouver l'original. Le popup désactive aussi l'extension sans la désinstaller.
 
 ## Développement
 

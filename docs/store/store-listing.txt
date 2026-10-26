@@ -35,6 +35,9 @@ right-click menu. The selection is replaced by its translation on the spot, keep
 italics, links and images where they belong. A mini-bar lets you peek at the original,
 restore it, or translate again.
 
+To read a whole article, click "Translate page" in the popup or the right-click menu: all
+the visible text of the page is translated in place, block by block.
+
 Select whole sentences or paragraphs rather than single words. The model translates from
 context, so the surrounding words are what let it pick the right meaning, and a word on
 its own loses exactly that.
@@ -53,7 +56,7 @@ Japanese, Korean, Chinese, Arabic, Russian.
 - api.anthropic.com is the only server this extension contacts. No analytics, no
   telemetry, no third-party service.
 - Nothing leaves your browser until you ask for a translation, and only the text you
-  selected is sent.
+  selected, or the visible text of the page you asked to translate, is sent.
 
 Free and open source under the MIT license:
 https://github.com/enixCode/in-place-translate
@@ -82,10 +85,10 @@ Code distant : repondre NON.
 
 --- OBJECTIF UNIQUE -----------------------------------------------------------
 
-The extension has a single purpose: translating a text selection the user makes on a web
-page, and showing that translation in place of the selected text on the same page. Every
-permission and every UI element (floating button, context menu entry, mini-bar, options
-page, popup toggle) exists to serve that one function.
+The extension has a single purpose: translating text the user chooses on a web page (a
+selection, or the whole page on request), and showing that translation in place of the
+original text on the same page. Every permission and every UI element (floating button,
+context menu entries, mini-bar, options page, popup) exists to serve that one function.
 
 --- STORAGE -------------------------------------------------------------------
 
@@ -97,15 +100,16 @@ the user's own requests to api.anthropic.com.
 
 --- CONTEXTMENUS --------------------------------------------------------------
 
-Adds one entry, "Translate", to the right-click menu, registered with
-contexts: ["selection"] so it only appears when text is selected. It is the alternative
-entry point to the floating button. No other menu item is created.
+Adds two entries to the right-click menu: "Translate", registered with
+contexts: ["selection"] so it only appears when text is selected, the alternative entry
+point to the floating button; and "Translate page", registered with contexts: ["page"],
+which translates the visible text of the page. No other menu item is created.
 
 --- ACTIVETAB -----------------------------------------------------------------
 
-When the user clicks the "Translate" context menu entry, the service worker sends a
-message to the content script of the tab the user acted on (chrome.tabs.sendMessage) so it
-can translate the current selection. activeTab limits that access to the tab where the
+When the user clicks a context menu entry or the popup's "Translate page" button, the
+service worker sends a message to the content script of the tab the user acted on
+(chrome.tabs.sendMessage) so it can translate the current selection or the page. activeTab limits that access to the tab where the
 user just clicked, and only after that click. It is used for nothing else: no tab is read,
 injected into, or modified without that user gesture.
 

@@ -76,7 +76,7 @@
       padding: 6px 0;
       border-top: 1px solid var(--border);
     }
-    #grantAccess {
+    #grantAccess, #translatePage {
       width: 100%;
       margin-top: 2px;
       padding: 7px 10px;
@@ -89,6 +89,7 @@
       cursor: pointer;
     }
     #grantAccess[hidden] { display: none; }
+    #translatePage { margin: 0 0 10px; }
     a {
       display: block;
       margin-top: 8px;
@@ -110,6 +111,7 @@
     <span id="labelEnabled"></span>
     <input type="checkbox" id="enabled">
   </label>
+  <button type="button" id="translatePage"></button>
   <div id="targetLangDisplay"></div>
   <span id="siteAccessStatus"></span>
   <button type="button" id="grantAccess" hidden></button>

@@ -12,6 +12,7 @@
   var miniBarEl = null;
   var MIN_SELECTION_CHARS = 3;
   var MAX_BATCH_CHARS = 12000;
+  var MAX_PARALLEL_BATCHES = 4;
 
   function isOwnUiElement(el) {
     return !!(el && el.closest && (
@@ -188,13 +189,36 @@
   }
 
   function triggerTranslate(range) {
+    startZone(function () {
+      return [IptrDom.resolveFusionAndReconstructRange(range, document, zones).range];
+    }, false);
+  }
+
+  // Les zones déjà traduites sont restaurées d'abord : la page repart d'un DOM
+  // d'origine, sans span imbriqué dans un autre.
+  function translatePage() {
+    zones.forEach(function (zone) {
+      zone.cancelled = true;
+      IptrDom.restoreZone(zone);
+      hideLoadingIndicator(zone);
+    });
+    zones.clear();
+    startZone(function () {
+      return IptrDom.findTextBlocks(document.body).map(function (el) {
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        return range;
+      });
+    }, true);
+  }
+
+  function startZone(getRanges, isPage) {
     chrome.storage.local.get(['targetLang']).then(function (config) {
       var targetLang = config.targetLang || 'fr';
       var doc = document;
 
-      var fusion = IptrDom.resolveFusionAndReconstructRange(range, doc, zones);
       var zoneId = IptrDom.generateZoneId();
-      var zone = IptrDom.wrapRangeIntoZone(fusion.range, zoneId, doc);
+      var zone = IptrDom.wrapRangesIntoZone(getRanges(), zoneId, doc);
       // Sélection entièrement non traduisible (bloc <pre>, code inline seul) :
       // aucun span n'a été posé, le DOM est intact. Sans cette garde,
       // showLoadingIndicator lirait zone.segments[-1].el et jetterait.
@@ -203,36 +227,54 @@
         return;
       }
       zone.targetLang = targetLang;
+      zone.isPage = isPage;
+      if (isPage) zone.segments.forEach(function (seg) { seg.el.classList.add('iptr-page'); });
       zones.set(zoneId, zone);
       showLoadingIndicator(zone);
 
       var batches = planBatches(zone.segments, MAX_BATCH_CHARS);
+      var nextBatch = 0;
+      var remaining = batches.length;
 
-      function runNextBatch(batchIndex) {
-        if (zone.cancelled) return;
-        if (batchIndex >= batches.length) {
-          zone.status = 'done';
-          hideLoadingIndicator(zone);
-          return;
-        }
-        translateBatch(zone, batches[batchIndex], targetLang).then(function (result) {
+      // Plusieurs lots en vol : une page entière en séquentiel ferait attendre
+      // la somme des appels. Chaque lot se dévoile dès qu'il est appliqué.
+      function runWorker() {
+        if (zone.cancelled || nextBatch >= batches.length) return;
+        var indices = batches[nextBatch++];
+        translateBatch(zone, indices, targetLang).then(function (result) {
           if (zone.cancelled) return;
           if (!result.ok) {
+            zone.cancelled = true;
             IptrDom.restoreZone(zone);
             zones.delete(zoneId);
             hideLoadingIndicator(zone);
             showTranslateError(result.error);
             return;
           }
-          runNextBatch(batchIndex + 1);
+          indices.forEach(function (i) { zone.segments[i].el.classList.remove('iptr-loading'); });
+          remaining--;
+          if (remaining === 0) {
+            zone.status = 'done';
+            hideLoadingIndicator(zone);
+            return;
+          }
+          runWorker();
         });
       }
 
-      runNextBatch(0);
+      for (var w = 0; w < Math.min(MAX_PARALLEL_BATCHES, batches.length); w++) runWorker();
     });
   }
 
   chrome.runtime.onMessage.addListener(function (message) {
+    if (message.type === 'translatePage') {
+      removeButton();
+      chrome.storage.local.get(['enabled']).then(function (config) {
+        if (config.enabled === false) return;
+        translatePage();
+      });
+      return;
+    }
     if (message.type !== 'translateSelection') return;
     removeButton();
     var selection = window.getSelection();
@@ -333,7 +375,9 @@
     if (!target) return;
     var zoneId = target.getAttribute('data-iptr-id');
     var zone = zones.get(zoneId);
-    if (!zone) return;
+    // Page entière : tout le texte est dans la zone, une mini-barre à chaque
+    // clic gênerait la lecture. Recharger la page rend l'original.
+    if (!zone || zone.isPage) return;
     if (zone.status === 'loading') {
       showCancelBar(zone, target);
     } else if (zone.status === 'done') {

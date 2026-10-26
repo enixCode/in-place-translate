@@ -16,6 +16,16 @@
 
   grantBtn.textContent = chrome.i18n.getMessage('btnAllowAllSites');
 
+  var translatePageBtn = document.getElementById('translatePage');
+  translatePageBtn.textContent = chrome.i18n.getMessage('btnTranslatePage');
+  translatePageBtn.addEventListener('click', function () {
+    chrome.tabs.query({ active: true, currentWindow: true }).then(function (tabs) {
+      if (!tabs[0]) return;
+      chrome.runtime.sendMessage({ type: 'translatePage', tabId: tabs[0].id });
+      window.close();
+    });
+  });
+
   function loadAccess() {
     chrome.permissions.contains({ origins: [ALL_URLS] }).then(function (granted) {
       accessStatus.textContent = chrome.i18n.getMessage(

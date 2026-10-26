@@ -17,6 +17,10 @@
       if (el.parentElement && el.parentElement.tagName === 'PRE') return true;
       if (isBlockElement(el)) return true;
     }
+    // Un élément masqué (menu déroulant, nav mobile) serait sinon aplati comme
+    // un inline inconnu : son texte reviendrait visible après traduction.
+    var view = el.ownerDocument.defaultView;
+    if (view && view.getComputedStyle(el).display === 'none') return true;
     return false;
   }
 
@@ -162,8 +166,38 @@
     return str.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   }
 
+  function hasDirectText(el) {
+    return Array.prototype.some.call(el.childNodes, function (child) {
+      if (child.nodeType === 3) return child.textContent.trim().length > 0;
+      return child.nodeType === 1 && !isBlockElement(child) && !isExcludedElement(child) &&
+        child.textContent.trim().length > 0;
+    });
+  }
+
+  // Traduction de page : on ne prend jamais le <body> d'un seul tenant, sinon
+  // chaque inline-block (boutons, liens de nav) serait aplati. On retient les
+  // blocs les plus externes qui portent du texte en propre ; leurs blocs
+  // enfants sont découpés par getSegmentRanges comme pour une sélection.
+  function findTextBlocks(rootEl) {
+    var covered = new Set();
+    var blocks = [];
+    Array.prototype.forEach.call(rootEl.querySelectorAll('*'), function (el) {
+      for (var p = el.parentElement; p && p !== rootEl; p = p.parentElement) {
+        if (covered.has(p)) return;
+      }
+      var ownUi = typeof el.className === 'string' && el.className.indexOf('iptr-') !== -1;
+      if (ownUi || isExcludedElement(el) || el.isContentEditable) { covered.add(el); return; }
+      if (isBlockElement(el) && hasDirectText(el)) { covered.add(el); blocks.push(el); }
+    });
+    return blocks;
+  }
+
   function wrapRangeIntoZone(range, zoneId, doc) {
-    var segmentRanges = getSegmentRanges(range);
+    return wrapRangesIntoZone([range], zoneId, doc);
+  }
+
+  function wrapRangesIntoZone(ranges, zoneId, doc) {
+    var segmentRanges = ranges.reduce(function (acc, range) { return acc.concat(getSegmentRanges(range)); }, []);
     var segments = segmentRanges.map(function (segRange, i) {
       // extractContents (pas surroundContents) car un segment peut
       // commencer ou finir au milieu d'une balise inline (ex: sélection
@@ -349,6 +383,8 @@
     isAtomicInline: isAtomicInline,
     hasTranslatableContent: hasTranslatableContent,
     wrapRangeIntoZone: wrapRangeIntoZone,
+    wrapRangesIntoZone: wrapRangesIntoZone,
+    findTextBlocks: findTextBlocks,
     serializeSegments: serializeSegments,
     plainSerializeSegments: plainSerializeSegments,
     parseTranslatedPayload: parseTranslatedPayload,

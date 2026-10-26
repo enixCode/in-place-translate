@@ -2,6 +2,7 @@
   "extName": { "message": "In-Place Translator" },
   "extDesc": { "message": "Traduisez le texte sélectionné directement sur la page. Utilisez votre propre clé API Anthropic." },
   "btnTranslate": { "message": "Traduire" },
+  "btnTranslatePage": { "message": "Traduire la page" },
   "errNoKey": { "message": "Ajoutez votre clé API dans les options" },
   "errAuth": { "message": "Clé API invalide" },
   "errHttp": { "message": "Trop de requêtes, réessayez" },

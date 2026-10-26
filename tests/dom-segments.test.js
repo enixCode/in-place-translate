@@ -92,3 +92,15 @@ test('list items produce one segment each', () => {
   assert.equal(segs[0].toString(), 'Item one');
   assert.equal(segs[1].toString(), 'Item two');
 });
+
+test('findTextBlocks keeps outermost text blocks and skips hidden, code and own UI', () => {
+  const dom = new JSDOM('<!doctype html><html><body>' +
+    '<div id="wrap"><h1 id="h">Title</h1><p id="p1">First <b>bold</b></p></div>' +
+    '<ul><li id="li"><a href="#">Link</a></li></ul>' +
+    '<div style="display:none"><p>Hidden</p></div>' +
+    '<pre><code>code()</code></pre>' +
+    '<div class="iptr-toast">Toast</div>' +
+    '</body></html>');
+  const ids = IptrDom.findTextBlocks(dom.window.document.body).map((el) => el.id);
+  assert.deepEqual(ids, ['h', 'p1', 'li']);
+});
