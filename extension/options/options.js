@@ -1,7 +1,7 @@
 'use strict';
 
 (function () {
-  var DEFAULT_MODEL = 'claude-haiku-4-5';
+  var DEFAULT_MODEL = 'claude-haiku-5-5';
   var DEFAULT_TARGET_LANG = 'fr';
 
   document.getElementById('title').textContent = chrome.i18n.getMessage('optionsTitle');

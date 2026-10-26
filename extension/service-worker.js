@@ -5,7 +5,8 @@
   var ANTHROPIC_VERSION = '2023-06-01';
   var REQUEST_TIMEOUT_MS = 60000;
   var MAX_TOKENS_CAP = 131072;
-  var DEFAULT_MODEL = 'claude-haiku-4-5';
+  var DEFAULT_MODEL = 'claude-haiku-5-5';
+  var MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'];
 
   var SYSTEM_PROMPT_TEMPLATE = [
     "You are a professional translator. Translate the user's text into {TARGET_LANGUAGE}.",
@@ -31,8 +32,10 @@
     return err;
   }
 
+  // La marge couvre la réflexion : elle reste active sur les modèles 5.5,
+  // même à effort bas, et compte dans max_tokens.
   function computeMaxTokens(payloadLength) {
-    return Math.min(MAX_TOKENS_CAP, Math.ceil(payloadLength / 2) + 500);
+    return Math.min(MAX_TOKENS_CAP, Math.ceil(payloadLength / 2) + 2000);
   }
 
   function buildSystemPrompt(targetLangCode, correctionNote) {
@@ -45,6 +48,9 @@
     return {
       model: model,
       max_tokens: computeMaxTokens(payload.length),
+      // Traduire ne demande pas de réflexion profonde : effort bas, réponse
+      // plus rapide et moins chère.
+      output_config: { effort: 'low' },
       system: [{ type: 'text', text: buildSystemPrompt(targetLangCode, correctionNote) }],
       messages: [{ role: 'user', content: payload }]
     };
@@ -223,6 +229,8 @@
       Object.keys(defaults).forEach(function (key) {
         if (existing[key] === undefined) toSet[key] = defaults[key];
       });
+      // Mise à jour : un modèle retiré de la liste repasse au défaut.
+      if (existing.model !== undefined && MODELS.indexOf(existing.model) === -1) toSet.model = DEFAULT_MODEL;
       if (Object.keys(toSet).length > 0) chrome.storage.local.set(toSet);
     });
 
